@@ -1,8 +1,10 @@
 package com.example.chatapp;
 
+import android.net.Uri;
 import android.os.Bundle;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
@@ -36,6 +38,7 @@ public class ChatActivity extends AppCompatActivity {
     ImageButton backBtn;
     TextView otherUsername;
     RecyclerView recyclerView;
+    ImageView profilePic;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,6 +58,15 @@ public class ChatActivity extends AppCompatActivity {
         backBtn = findViewById(R.id.back_btn);
         otherUsername = findViewById(R.id.other_username);
         recyclerView = findViewById(R.id.chat_recycle_view);
+        profilePic = findViewById(R.id.profile_pic_image_view);
+
+        FirebaseUtil.getOtherUserProfilePicStorageReference(otherUser.getUserId()).getDownloadUrl()
+                .addOnCompleteListener(t -> {
+                    if (t.isSuccessful()) {
+                        Uri uri = t.getResult();
+                        AndroidUtil.setProfilePic(this, uri, profilePic);
+                    }
+                });
 
         backBtn.setOnClickListener(v -> {
             onBackPressed();

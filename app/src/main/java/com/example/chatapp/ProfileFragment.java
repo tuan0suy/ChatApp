@@ -77,7 +77,9 @@ public class ProfileFragment extends Fragment {
 
         getUserData();
 
-        updateProfileBtn.setOnClickListener(v -> updateUserProfile());
+        updateProfileBtn.setOnClickListener(v -> {
+            updateBtnClick();
+        });
         logoutBtn.setOnClickListener((v)->{
             FirebaseMessaging.getInstance().deleteToken().addOnCompleteListener(new OnCompleteListener<Void>() {
                 @Override
@@ -107,6 +109,13 @@ public class ProfileFragment extends Fragment {
 
     private void getUserData() {
         setInProgress(true);
+        FirebaseUtil.getCurrentUserProfilePicStorageReference().getDownloadUrl()
+                        .addOnCompleteListener(task -> {
+                           if (task.isSuccessful()) {
+                               Uri uri = task.getResult();
+                               AndroidUtil.setProfilePic(getContext(), uri, profilePic);
+                           }
+                        });
         FirebaseUtil.currentUserDetails().get().addOnCompleteListener(task -> {
             setInProgress(false);
             if (task.isSuccessful() && task.getResult() != null) {
@@ -137,6 +146,35 @@ public class ProfileFragment extends Fragment {
         });
     }
 
+    private void updateBtnClick() {
+        String newUsername = username.getText().toString().trim();
+        if (newUsername.isEmpty() || newUsername.length() < 3) {
+            username.setError("Username must be at least 3 characters");
+            return;
+        }
+        currentUserModel.setUsername(newUsername);
+        setInProgress(true);
+        if (selectedImageUri != null) {
+            FirebaseUtil.getCurrentUserProfilePicStorageReference().putFile(selectedImageUri)
+                    .addOnCompleteListener(task -> {
+                        updateToFireStore();
+                    });
+        } else {
+            updateToFireStore();
+        }
+    }
+
+    private void updateToFireStore() {
+        FirebaseUtil.currentUserDetails().set(currentUserModel)
+                .addOnCompleteListener(task -> {
+                    setInProgress(false);
+                    if (task.isSuccessful()) {
+                        AndroidUtil.showToast(getContext(), "Updated successfully");
+                    } else {
+                        AndroidUtil.showToast(getContext(), "Updated failed");
+                    }
+                });
+    }
 
     private void setInProgress(boolean inProgress) {
         if (inProgress) {
